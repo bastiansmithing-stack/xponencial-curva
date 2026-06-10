@@ -1,0 +1,1 @@
+# xponencial-curva
