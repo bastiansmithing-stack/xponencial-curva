@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Función exponencial — Xponencial</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 28px 20px;
+  }
+  #wrap { width: 100%; max-width: 580px; }
+  canvas { display: block; width: 100%; height: auto; }
+  #relato {
+    margin-top: 22px;
+    min-height: 64px;
+    font-size: 15px;
+    line-height: 1.8;
+    color: #5F5E5A;
+    transition: opacity 0.5s ease;
+  }
+  #relato span { color: #3897B7; font-weight: 500; }
+  #step-dots {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    align-items: center;
+  }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #D3D1C7;
+    transition: background 0.5s, transform 0.3s;
+  }
+  .dot.active {
+    background: #3897B7;
+    transform: scale(1.3);
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c" width="580" height="250"></canvas>
+  <div id="relato"></div>
+  <div id="step-dots"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const relatoEl = document.getElementById('relato');
+  const dotsEl = document.getElementById('step-dots');
+
+  const BLUE      = '#3897B7';
+  const BLUE_SOFT = '#9FD4E6';
+  const BLUE_PALE = '#E0F2F9';
+  const GRAY_AXIS = '#B4B2A9';
+  const GRAY_GHOST= '#D3D1C7';
+
+  const W = 580, H = 250;
+  const PAD_L = 62, PAD_R = 30, PAD_T = 26, PAD_B = 46;
+  const plotW = W - PAD_L - PAD_R;
+  const plotH = H - PAD_T - PAD_B;
+  const X_MIN = -0.4, X_MAX = 3.7;
+  const Y_MAX = Math.pow(Math.E, 3) + 2;
+
+  function toX(x){ return PAD_L + (x - X_MIN)/(X_MAX - X_MIN) * plotW; }
+  function toY(y){ return PAD_T + plotH - (y / Y_MAX) * plotH; }
+
+  const steps = [
+    { x: 0,   relato: 'El territorio está en <span>reposo</span>. Hay comunidades, historia, recursos. Pero el impulso aún no se activa. y&nbsp;=&nbsp;1.' },
+    { x: 0.7, relato: 'Se instala el <span>primer diagnóstico</span>. Los actores se conocen. El crecimiento es lento, pero ya es real.' },
+    { x: 1.0, relato: 'Primer <span>acuerdo territorial</span>. La confianza empieza a construirse. y&nbsp;=&nbsp;e&nbsp;≈&nbsp;2.7.' },
+    { x: 1.6, relato: 'Los <span>proyectos se articulan</span>. La comunidad toma protagonismo. El ritmo se acelera.' },
+    { x: 2.0, relato: '<span>Innovación en marcha</span>. Cada nuevo actor multiplica el impacto. y&nbsp;=&nbsp;e²&nbsp;≈&nbsp;7.4.' },
+    { x: 2.5, relato: 'El territorio <span>genera sus propios líderes</span>. El crecimiento ya no necesita empuje externo.' },
+    { x: 3.0, relato: '<span>Desarrollo exponencial</span>. Lo que antes era imposible, ahora es inevitable. y&nbsp;=&nbsp;e³&nbsp;≈&nbsp;20.' },
+    { x: 3.7, relato: 'Esto es <span>xponencial</span>: cuando el talento, la ingeniería y el territorio se unen, el crecimiento no tiene techo.' },
+  ];
+
+  steps.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    d.id = 'dot' + i;
+    dotsEl.appendChild(d);
+  });
+
+  function pts(upToX){
+    const n = 220, arr = [];
+    for(let i = 0; i <= n; i++){
+      const x = X_MIN + (Math.min(upToX, X_MAX) - X_MIN) * (i/n);
+      const y = Math.exp(x);
+      if(y <= Y_MAX + 0.5) arr.push([toX(x), toY(y)]);
+    }
+    return arr;
+  }
+
+  function drawAxes(){
+    ctx.save();
+    ctx.strokeStyle = GRAY_AXIS; ctx.lineWidth = 0.9; ctx.globalAlpha = 0.55;
+    ctx.beginPath(); ctx.moveTo(PAD_L, PAD_T - 6); ctx.lineTo(PAD_L, PAD_T + plotH + 8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(PAD_L - 8, PAD_T + plotH); ctx.lineTo(PAD_L + plotW + 10, PAD_T + plotH); ctx.stroke();
+
+    ctx.fillStyle = GRAY_AXIS;
+    ctx.beginPath(); ctx.moveTo(PAD_L+plotW+10,PAD_T+plotH-4); ctx.lineTo(PAD_L+plotW+18,PAD_T+plotH); ctx.lineTo(PAD_L+plotW+10,PAD_T+plotH+4); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(PAD_L-4,PAD_T-6); ctx.lineTo(PAD_L,PAD_T-14); ctx.lineTo(PAD_L+4,PAD_T-6); ctx.fill();
+
+    ctx.font = '11px serif'; ctx.fillStyle = GRAY_AXIS; ctx.globalAlpha = 0.75;
+    ctx.textAlign = 'center';
+    [1,2,3].forEach(xv => {
+      const cx = toX(xv);
+      ctx.beginPath(); ctx.moveTo(cx, PAD_T+plotH-3); ctx.lineTo(cx, PAD_T+plotH+5); ctx.stroke();
+      ctx.fillText(xv, cx, PAD_T+plotH+17);
+    });
+    ctx.textAlign = 'right';
+    [[1,'1'],[Math.E,'e'],[Math.E*Math.E,'e²'],[Math.E*Math.E*Math.E,'e³']].forEach(([yv,lbl]) => {
+      const cy = toY(yv);
+      if(cy >= PAD_T - 2){
+        ctx.beginPath(); ctx.moveTo(PAD_L-3,cy); ctx.lineTo(PAD_L+3,cy); ctx.stroke();
+        ctx.fillText(lbl, PAD_L-8, cy+4);
+      }
+    });
+    ctx.globalAlpha = 0.5; ctx.textAlign='left';
+    ctx.fillText('x', PAD_L+plotW+20, PAD_T+plotH+4);
+    ctx.textAlign='center';
+    ctx.fillText('y', PAD_L-5, PAD_T-18);
+    ctx.restore();
+  }
+
+  function drawGhost(){
+    const p = pts(X_MAX);
+    ctx.save(); ctx.strokeStyle=GRAY_GHOST; ctx.lineWidth=1;
+    ctx.setLineDash([4,5]); ctx.globalAlpha=0.3;
+    ctx.beginPath(); p.forEach((pt,i)=>i===0?ctx.moveTo(pt[0],pt[1]):ctx.lineTo(pt[0],pt[1])); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawCurve(upToX){
+    if(upToX <= X_MIN) return;
+    const p = pts(upToX);
+    ctx.save(); ctx.strokeStyle=BLUE; ctx.lineWidth=2.5;
+    ctx.lineJoin='round'; ctx.lineCap='round'; ctx.setLineDash([]);
+    ctx.beginPath(); p.forEach((pt,i)=>i===0?ctx.moveTo(pt[0],pt[1]):ctx.lineTo(pt[0],pt[1])); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawVline(x){
+    const cx=toX(x), cy=toY(Math.exp(x));
+    ctx.save(); ctx.strokeStyle=BLUE; ctx.lineWidth=0.8;
+    ctx.setLineDash([3,4]); ctx.globalAlpha=0.25;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx,PAD_T+plotH); ctx.stroke(); ctx.restore();
+  }
+
+  function drawDot(x){
+    const cx=toX(x), cy=toY(Math.exp(x));
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx,cy,10,0,Math.PI*2);
+    ctx.fillStyle=BLUE_PALE; ctx.globalAlpha=0.45; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx,cy,5,0,Math.PI*2);
+    ctx.fillStyle='#fff'; ctx.globalAlpha=1; ctx.fill();
+    ctx.strokeStyle=BLUE; ctx.lineWidth=2.2; ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawFrame(upToX){
+    ctx.clearRect(0,0,W,H);
+    drawGhost();
+    drawAxes();
+    steps.forEach(s=>{ if(s.x<=upToX && s.x>0) drawVline(s.x); });
+    drawCurve(upToX);
+    if(upToX>X_MIN) drawDot(Math.min(upToX, X_MAX-0.02));
+  }
+
+  function updateRelato(idx){
+    relatoEl.style.opacity=0;
+    setTimeout(()=>{ relatoEl.innerHTML=steps[idx].relato; relatoEl.style.opacity=1; }, 280);
+    document.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active', i<=idx));
+  }
+
+  function ease(t){ return t<0.5 ? 2*t*t : -1+(4-2*t)*t; }
+
+  const MOVE_DURATION = 2800;  // ms para animar de un step al siguiente
+  const PAUSE_DURATION = 5000; // ms de pausa leyendo el relato
+  const RESTART_PAUSE  = 3500; // ms antes de reiniciar el loop
+
+  function animStep(idx){
+    if(idx >= steps.length - 1){
+      drawFrame(steps[steps.length-1].x);
+      updateRelato(steps.length-1);
+      setTimeout(()=> animStep(0), RESTART_PAUSE);
+      return;
+    }
+
+    const fromX = steps[idx].x;
+    const toXv  = steps[idx+1].x;
+    let t0 = null;
+
+    updateRelato(idx);
+
+    function frame(ts){
+      if(!t0) t0=ts;
+      const t = Math.min((ts-t0)/MOVE_DURATION, 1);
+      drawFrame(fromX + (toXv-fromX)*ease(t));
+      if(t<1){
+        requestAnimationFrame(frame);
+      } else {
+        drawFrame(toXv);
+        setTimeout(()=> animStep(idx+1), PAUSE_DURATION);
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  drawFrame(0);
+  updateRelato(0);
+  setTimeout(()=> animStep(0), 1500);
+})();
+</script>
+</body>
+</html>
